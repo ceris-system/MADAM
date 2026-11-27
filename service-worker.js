@@ -1,11 +1,10 @@
-const CACHE_NAME = "mama-sita-dashboard-v1";
+const CACHE_NAME = "mama-sita-dashboard-v2";
 const APP_SHELL = [
   new URL("./index.html", self.location).href,
   new URL("./styles.css?v=pwa-v1", self.location).href,
   new URL("./app.js?v=pwa-v1", self.location).href,
   new URL("./manifest.webmanifest", self.location).href,
   new URL("./privacy.html", self.location).href,
-  new URL("./Mama_Sita%27s%20Logo.png?v=1", self.location).href,
   new URL("./icons/mama-sita-192.png", self.location).href,
   new URL("./icons/mama-sita-512.png", self.location).href
 ];
@@ -39,7 +38,8 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(async () => (await caches.match(request)) || (await caches.match(INDEX_URL)) || Response.error())
+      fetch(request, { cache: "no-store" })
+        .catch(async () => (await caches.match(request)) || (await caches.match(INDEX_URL)) || Response.error())
     );
     return;
   }
@@ -48,7 +48,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     try {
-      const response = await fetch(request);
+      const response = await fetch(request, { cache: "no-store" });
       if (response.ok) await cache.put(request, response.clone());
       return response;
     } catch (error) {

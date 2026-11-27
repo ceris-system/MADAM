@@ -1,8 +1,20 @@
 const STORAGE = {
   clientId: "apps-google-client-id",
   sources: "apps-google-spreadsheet-sources",
-  activeCategory: "apps-google-active-spreadsheet-category"
+  activeCategory: "apps-google-active-spreadsheet-category",
+  appRevision: "apps-dashboard-asset-revision"
 };
+
+const APP_UPDATE_ASSETS = [
+  "./index.html",
+  "./app.js?v=pwa-v1",
+  "./styles.css?v=pwa-v1",
+  "./service-worker.js",
+  "./manifest.webmanifest",
+  "./privacy.html",
+  "./icons/mama-sita-192.png",
+  "./icons/mama-sita-512.png"
+];
 
 const DEFAULT_SOURCE = {
   category: "Manning",
@@ -18,6 +30,7 @@ const state = {
   tokenClient: null,
   tokenClientClientId: null,
   installPrompt: null,
+  checkingAppAssets: false,
   clientId: localStorage.getItem(STORAGE.clientId) || "",
   sources: [],
   activeCategory: "",
@@ -30,6 +43,7 @@ const state = {
   rowNumbers: [],
   editingRowIndex: null,
   isRefreshing: false,
+  appUpdatePending: false,
   tableProgress: 0,
   tableProgressTimer: null,
   tableProgressHideTimer: null
@@ -137,10 +151,39 @@ window.addEventListener("appinstalled", () => {
 });
 updateInstallButton();
 if (window.isSecureContext && "serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./service-worker.js").catch((error) => {
+  let hasController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (hasController) reloadForAppUpdate();
+    else hasController = true;
+  });
+  navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" }).then((registration) => {
+    const checkForUpdate = () => {
+      if (!navigator.onLine) return;
+      registration.update().catch((error) => {
+        console.error("App update check failed:", error);
+      });
+    };
+    checkForUpdate();
+    window.addEventListener("online", checkForUpdate);
+    window.addEventListener("focus", checkForUpdate);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) checkForUpdate();
+    });
+    window.setInterval(checkForUpdate, 30 * 60 * 1000);
+  }).catch((error) => {
     console.error("Service worker registration failed:", error);
     toast("Offline support could not be enabled");
   });
+}
+checkForAppAssetUpdates();
+window.addEventListener("online", checkForAppAssetUpdates);
+window.addEventListener("focus", checkForAppAssetUpdates);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) checkForAppAssetUpdates();
+});
+window.setInterval(checkForAppAssetUpdates, 30 * 60 * 1000);
+for (const dialog of [els.rowDialog, els.spreadsheetDialog, els.settingsDialog]) {
+  dialog.addEventListener("close", applyPendingAppUpdate);
 }
 els.sourceSelect.addEventListener("change", () => selectSource(els.sourceSelect.value));
 els.deleteSourceButton.addEventListener("click", deleteSelectedSource);
@@ -305,6 +348,7 @@ async function refreshSpreadsheet() {
     finishTableProgress(refreshed);
     state.isRefreshing = false;
     updateRefreshButton();
+    applyPendingAppUpdate();
   }
 }
 
@@ -575,6 +619,49 @@ function isAppInstalled() {
 
 function updateInstallButton() {
   els.installButton.classList.toggle("hidden", isAppInstalled());
+}
+
+async function checkForAppAssetUpdates() {
+  if (!navigator.onLine || state.checkingAppAssets) return;
+  state.checkingAppAssets = true;
+  try {
+    const assetRevisions = await Promise.all(APP_UPDATE_ASSETS.map(async (asset) => {
+      const url = new URL(asset, window.location.href);
+      const response = await fetch(url, { method: "HEAD", cache: "no-store" });
+      if (!response.ok) throw new Error(`Update check failed for ${url.pathname}: HTTP ${response.status}`);
+      return [
+        url.pathname + url.search,
+        response.headers.get("etag") || "",
+        response.headers.get("last-modified") || "",
+        response.headers.get("content-length") || ""
+      ].join(":");
+    }));
+    const revision = assetRevisions.join("|");
+    const previousRevision = localStorage.getItem(STORAGE.appRevision);
+    localStorage.setItem(STORAGE.appRevision, revision);
+    if (previousRevision && previousRevision !== revision) reloadForAppUpdate();
+  } catch (error) {
+    console.error("App asset update check failed:", error);
+  } finally {
+    state.checkingAppAssets = false;
+  }
+}
+
+function reloadForAppUpdate() {
+  const formIsOpen = [els.rowDialog, els.spreadsheetDialog, els.settingsDialog].some((dialog) => dialog.open);
+  if (formIsOpen || state.isRefreshing) {
+    state.appUpdatePending = true;
+    toast("An update is ready and will apply after you finish this task.");
+    return;
+  }
+  window.location.reload();
+}
+
+function applyPendingAppUpdate() {
+  if (!state.appUpdatePending || state.isRefreshing) return;
+  if ([els.rowDialog, els.spreadsheetDialog, els.settingsDialog].some((dialog) => dialog.open)) return;
+  state.appUpdatePending = false;
+  window.location.reload();
 }
 
 async function handleInstallClick() {
