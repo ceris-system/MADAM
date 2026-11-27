@@ -17,6 +17,7 @@ const state = {
   accessToken: null,
   tokenClient: null,
   tokenClientClientId: null,
+  installPrompt: null,
   clientId: localStorage.getItem(STORAGE.clientId) || "",
   sources: [],
   activeCategory: "",
@@ -36,6 +37,9 @@ const state = {
 
 const els = {
   connectButton: document.querySelector("#connectButton"),
+  installButton: document.querySelector("#installButton"),
+  installDialog: document.querySelector("#installDialog"),
+  installInstructions: document.querySelector("#installInstructions"),
   settingsButton: document.querySelector("#settingsButton"),
   settingsDialog: document.querySelector("#settingsDialog"),
   settingsForm: document.querySelector("#settingsForm"),
@@ -121,6 +125,23 @@ els.settingsForm.addEventListener("submit", (event) => {
 });
 
 els.connectButton.addEventListener("click", openSpreadsheetDialog);
+els.installButton.addEventListener("click", handleInstallClick);
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  state.installPrompt = event;
+});
+window.addEventListener("appinstalled", () => {
+  state.installPrompt = null;
+  updateInstallButton();
+  toast("Mama Sita's Apps is installed");
+});
+updateInstallButton();
+if (window.isSecureContext && "serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./service-worker.js").catch((error) => {
+    console.error("Service worker registration failed:", error);
+    toast("Offline support could not be enabled");
+  });
+}
 els.sourceSelect.addEventListener("change", () => selectSource(els.sourceSelect.value));
 els.deleteSourceButton.addEventListener("click", deleteSelectedSource);
 els.spreadsheetForm.addEventListener("submit", (event) => {
@@ -546,6 +567,50 @@ function clearTableData() {
 function updateRefreshButton() {
   els.refreshButton.disabled = state.isRefreshing || !getActiveSource();
   els.refreshButtonLabel.textContent = state.isRefreshing ? "Refreshing..." : state.accessToken ? "Refresh" : "Reconnect";
+}
+
+function isAppInstalled() {
+  return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+}
+
+function updateInstallButton() {
+  els.installButton.classList.toggle("hidden", isAppInstalled());
+}
+
+async function handleInstallClick() {
+  if (isAppInstalled()) {
+    updateInstallButton();
+    return;
+  }
+  if (!state.installPrompt) {
+    const userAgent = navigator.userAgent;
+    const isAppleMobile = /iPad|iPhone|iPod/.test(userAgent)
+      || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (isAppleMobile) {
+      els.installInstructions.textContent = "In Safari, tap Share, then choose Add to Home Screen.";
+    } else if (/Android/i.test(userAgent)) {
+      els.installInstructions.textContent = "Open your browser menu and choose Install app or Add to Home Screen.";
+    } else if (/Safari/i.test(userAgent) && !/Chrome|Chromium|Edg/i.test(userAgent)) {
+      els.installInstructions.textContent = "In Safari, choose File, then Add to Dock.";
+    } else if (/Firefox/i.test(userAgent)) {
+      els.installInstructions.textContent = "Open this dashboard in Chrome or Edge to install it as an app.";
+    } else {
+      els.installInstructions.textContent = "Use the install icon in your browser's address bar, or choose Install app from its menu.";
+    }
+    els.installDialog.showModal();
+    return;
+  }
+
+  const prompt = state.installPrompt;
+  state.installPrompt = null;
+  try {
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    if (choice.outcome === "accepted") toast("Installation started");
+  } catch (error) {
+    console.error("App installation failed:", error);
+    toast("Could not start the app installation");
+  }
 }
 
 function markDisconnected() {

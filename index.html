@@ -2,13 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Apps Dashboard</title>
+    <meta name="theme-color" content="#17233c" />
     <link rel="icon" type="image/png" href="./Mama_Sita%27s%20Logo.png?v=1" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=refresh-progress" />
+    <link rel="stylesheet" href="styles.css?v=pwa-v1" />
   </head>
   <body>
     <aside class="sidebar">
@@ -50,9 +52,12 @@
           <p class="eyebrow">Workspace</p>
           <h1>Apps</h1>
         </div>
-        <button id="connectButton" class="primary-button" type="button">
-          <span>+</span> Add spreadsheet
-        </button>
+        <div class="topbar-actions">
+          <button id="installButton" class="secondary-button" type="button">Install app</button>
+          <button id="connectButton" class="primary-button" type="button">
+            <span>+</span> Add spreadsheet
+          </button>
+        </div>
       </header>
 
       <section class="source-bar">
@@ -217,9 +222,25 @@
       </form>
     </dialog>
 
+    <dialog id="installDialog" aria-labelledby="installDialogTitle">
+      <form method="dialog">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Install dashboard</p>
+            <h2 id="installDialogTitle">Add Mama Sita's Apps</h2>
+          </div>
+          <button class="close-button" value="cancel" aria-label="Close" type="submit">×</button>
+        </div>
+        <p id="installInstructions" class="field-help"></p>
+        <div class="dialog-actions">
+          <button class="primary-button" value="default" type="submit">Done</button>
+        </div>
+      </form>
+    </dialog>
+
     <div id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="app.js?v=refresh-progress"></script>
+    <script src="app.js?v=pwa-v1"></script>
   </body>
 </html>
