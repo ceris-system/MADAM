@@ -294,6 +294,28 @@ tbody tr.has-details { cursor: pointer; }
 .empty-state h2 { margin: 14px 0 5px; color: var(--ink); font-size: 16px; }
 .empty-state p { margin: 0; font-size: 13px; }
 
+.table-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .84);
+}
+.table-loading.hidden { display: none; }
+.table-loading-panel {
+  width: min(300px, calc(100% - 32px));
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(23, 35, 60, .08);
+}
+.table-loading-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+.table-loading-heading strong { color: var(--blue); font-size: 13px; }
+.table-loading-progress { height: 7px; margin-top: 12px; overflow: hidden; border-radius: 999px; background: #edf0f6; }
+.table-loading-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--blue); transition: width .18s ease; }
+
 dialog {
   width: min(520px, calc(100vw - 32px));
   border: 0;

@@ -27,7 +27,11 @@ const state = {
   headers: [],
   rows: [],
   rowNumbers: [],
-  editingRowIndex: null
+  editingRowIndex: null,
+  isRefreshing: false,
+  tableProgress: 0,
+  tableProgressTimer: null,
+  tableProgressHideTimer: null
 };
 
 const els = {
@@ -46,6 +50,9 @@ const els = {
   sheetSelect: document.querySelector("#sheetSelect"),
   refreshButton: document.querySelector("#refreshButton"),
   refreshButtonLabel: document.querySelector("#refreshButtonLabel"),
+  tableLoading: document.querySelector("#tableLoading"),
+  tableProgressPercent: document.querySelector("#tableProgressPercent"),
+  tableProgressBar: document.querySelector("#tableProgressBar"),
   searchInput: document.querySelector("#searchInput"),
   tableAddButton: document.querySelector("#tableAddButton"),
   addAppButton: document.querySelector("#addAppButton"),
@@ -247,10 +254,16 @@ function selectSource(category) {
   else requestGoogleAuthorization();
 }
 
-function refreshSpreadsheet() {
+async function refreshSpreadsheet() {
+  if (state.isRefreshing) return;
   const source = getActiveSource();
   if (!source) return;
-  state.spreadsheetId = spreadsheetIdFromUrl(source.url);
+  try {
+    state.spreadsheetId = spreadsheetIdFromUrl(source.url);
+  } catch (error) {
+    toast(error.message || "Enter a valid Google Sheets URL or spreadsheet ID");
+    return;
+  }
 
   if (!state.accessToken) {
     state.sheetName = source.sheetName || "";
@@ -258,11 +271,20 @@ function refreshSpreadsheet() {
     return;
   }
 
-  if (!state.sheetName || !state.sheets.some((sheet) => sheet.properties.title === state.sheetName)) {
-    loadSpreadsheet(state.spreadsheetId);
-    return;
+  state.isRefreshing = true;
+  els.refreshButton.disabled = true;
+  els.refreshButtonLabel.textContent = "Refreshing...";
+  startTableProgress();
+  let refreshed = false;
+  try {
+    refreshed = !state.sheetName || !state.sheets.some((sheet) => sheet.properties.title === state.sheetName)
+      ? await loadSpreadsheet(state.spreadsheetId)
+      : await loadSheetData();
+  } finally {
+    finishTableProgress(refreshed);
+    state.isRefreshing = false;
+    updateRefreshButton();
   }
-  loadSheetData();
 }
 
 function deleteSelectedSource() {
@@ -365,7 +387,7 @@ function spreadsheetIdFromUrl(value) {
 }
 
 async function loadSpreadsheet(id) {
-  if (!id) return;
+  if (!id) return false;
   state.spreadsheetId = id;
   setSelectPlaceholder(els.sheetSelect, "Loading sheets...");
   clearTableData();
@@ -376,7 +398,7 @@ async function loadSpreadsheet(id) {
     if (!state.sheets.length) {
       setSelectPlaceholder(els.sheetSelect, "No sheets found");
       showEmptyState("No sheets found", "This spreadsheet does not contain any sheets.");
-      return;
+      return false;
     }
 
     state.sheets.forEach((sheet) => {
@@ -390,17 +412,18 @@ async function loadSpreadsheet(id) {
     const matchingName = state.sheets.find((sheet) => sheet.properties.title === savedName)
       || state.sheets.find((sheet) => sheet.properties.title.toLowerCase() === savedName.toLowerCase());
     els.sheetSelect.value = matchingName?.properties.title || state.sheets[0]?.properties.title || "";
-    await selectSheet(els.sheetSelect.value);
+    return await selectSheet(els.sheetSelect.value);
   } catch (error) {
     setSelectPlaceholder(els.sheetSelect, "Could not load sheets");
     const message = error.message || "Could not load sheets from this spreadsheet";
     showEmptyState("Could not load sheets", message);
     toast(message);
+    return false;
   }
 }
 
 async function selectSheet(name) {
-  if (!name) return;
+  if (!name) return false;
   state.sheetName = name;
   const source = getActiveSource();
   if (source) {
@@ -408,11 +431,11 @@ async function selectSheet(name) {
     persistSourceConfig(state.sources, state.activeCategory);
   }
   els.searchInput.disabled = false;
-  await loadSheetData();
+  return await loadSheetData();
 }
 
 async function loadSheetData() {
-  if (!state.spreadsheetId || !state.sheetName) return;
+  if (!state.spreadsheetId || !state.sheetName) return false;
   try {
     const range = encodeURIComponent(`${quoteSheetName(state.sheetName)}!A1:Z1000`);
     const data = await api(`spreadsheets/${state.spreadsheetId}/values/${range}`);
@@ -442,9 +465,50 @@ async function loadSheetData() {
     renderTable();
     els.tableAddButton.disabled = !state.headers.length || isConsolidatedSheet();
     els.lastUpdated.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return true;
   } catch (error) {
     toast(error.message || "Could not load spreadsheet data");
+    return false;
   }
+}
+
+function startTableProgress() {
+  clearInterval(state.tableProgressTimer);
+  clearTimeout(state.tableProgressHideTimer);
+  state.tableProgress = 0;
+  updateTableProgress();
+  els.tableLoading.classList.remove("hidden");
+  state.tableProgressTimer = window.setInterval(() => {
+    state.tableProgress = Math.min(90, state.tableProgress + 2);
+    updateTableProgress();
+  }, 180);
+}
+
+function finishTableProgress(success) {
+  clearInterval(state.tableProgressTimer);
+  state.tableProgressTimer = null;
+  if (!success) {
+    els.tableLoading.classList.add("hidden");
+    state.tableProgress = 0;
+    updateTableProgress();
+    return;
+  }
+
+  state.tableProgress = 100;
+  updateTableProgress();
+  state.tableProgressHideTimer = window.setTimeout(() => {
+    els.tableLoading.classList.add("hidden");
+    state.tableProgress = 0;
+    updateTableProgress();
+    state.tableProgressHideTimer = null;
+  }, 400);
+}
+
+function updateTableProgress() {
+  const progress = state.tableProgress;
+  els.tableProgressPercent.textContent = `${progress}%`;
+  els.tableProgressBar.firstElementChild.style.width = `${progress}%`;
+  els.tableProgressBar.setAttribute("aria-valuenow", String(progress));
 }
 
 function setSelectPlaceholder(select, text) {
@@ -476,12 +540,12 @@ function clearTableData() {
   els.searchInput.disabled = true;
   els.tableAddButton.disabled = true;
   els.addAppButton.disabled = isConsolidatedSheet();
-  els.refreshButton.disabled = !getActiveSource();
+  els.refreshButton.disabled = state.isRefreshing || !getActiveSource();
 }
 
 function updateRefreshButton() {
-  els.refreshButton.disabled = !getActiveSource();
-  els.refreshButtonLabel.textContent = state.accessToken ? "Refresh" : "Reconnect";
+  els.refreshButton.disabled = state.isRefreshing || !getActiveSource();
+  els.refreshButtonLabel.textContent = state.isRefreshing ? "Refreshing..." : state.accessToken ? "Refresh" : "Reconnect";
 }
 
 function markDisconnected() {
