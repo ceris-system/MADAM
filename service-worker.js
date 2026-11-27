@@ -4,6 +4,7 @@ const APP_SHELL = [
   new URL("./styles.css?v=pwa-v1", self.location).href,
   new URL("./app.js?v=pwa-v1", self.location).href,
   new URL("./manifest.webmanifest", self.location).href,
+  new URL("./privacy.html", self.location).href,
   new URL("./Mama_Sita%27s%20Logo.png?v=1", self.location).href,
   new URL("./icons/mama-sita-192.png", self.location).href,
   new URL("./icons/mama-sita-512.png", self.location).href
@@ -38,7 +39,7 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(async () => (await caches.match(INDEX_URL)) || Response.error())
+      fetch(request).catch(async () => (await caches.match(request)) || (await caches.match(INDEX_URL)) || Response.error())
     );
     return;
   }

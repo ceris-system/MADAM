@@ -126,6 +126,9 @@ body {
 .icon-button svg { width: 18px; fill: #aeb8ca; }
 
 .main { min-width: 0; padding: 30px 38px 38px; }
+.app-footer { display: flex; justify-content: flex-end; padding: 18px 2px 0; font-size: 11px; }
+.app-footer a { color: var(--muted); text-decoration: none; }
+.app-footer a:hover { color: var(--blue-dark); text-decoration: underline; }
 
 .topbar {
   height: 60px;
@@ -365,6 +368,24 @@ dialog.side-drawer {
 .detail-item dd { margin: 0; color: var(--ink); font-size: 13px; font-weight: 500; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .drawer-empty { grid-column: 1 / -1; margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 9px; background: #fafbfe; color: var(--muted); font-size: 13px; }
 
+.policy-page { display: block; min-height: 100vh; min-height: 100dvh; }
+.policy-main { width: min(820px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 56px; }
+.policy-back { color: var(--blue-dark); font-size: 12px; text-decoration: none; }
+.policy-back:hover { text-decoration: underline; }
+.policy-header { padding: 30px 0 22px; border-bottom: 1px solid var(--line); }
+.policy-header h1 { margin: 4px 0 10px; font-size: clamp(24px, 5vw, 34px); }
+.policy-updated { margin: 0; color: var(--muted); font-size: 11px; }
+.policy-content { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 20px; }
+.policy-content section { min-width: 0; padding: 18px 20px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.policy-content h2 { margin: 0 0 9px; color: var(--ink); font-size: 15px; }
+.policy-content p, .policy-content li { color: #566176; font-size: 12px; line-height: 1.75; }
+.policy-content p { margin: 0; }
+.policy-content p + p { margin-top: 9px; }
+.policy-content ul { margin: 8px 0 0; padding-left: 20px; }
+.policy-content a { color: var(--blue-dark); overflow-wrap: anywhere; }
+.policy-content code { overflow-wrap: anywhere; word-break: break-word; }
+.policy-footer { padding-top: 18px; color: var(--muted); font-size: 11px; }
+
 #toast {
   position: fixed;
   right: 24px;
@@ -416,4 +437,6 @@ dialog.side-drawer {
   .drawer-section-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
   .drawer-section-heading span { text-align: left; }
   .detail-item { grid-template-columns: minmax(100px, .75fr) minmax(0, 1.25fr); gap: 12px; }
+  .policy-main { padding-top: 20px; }
+  .policy-content section { padding: 15px; }
 }
