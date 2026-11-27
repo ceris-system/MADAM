@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apps Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=drawer-no-number" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z" />
+          </svg>
+        </div>
+        <span>Apps</span>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" type="button">
+          <svg viewBox="0 0 24 24"><path d="M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6v-9h-6v9zm0-16v5h6V4h-6z" /></svg>
+          <span>Overview</span>
+        </button>
+      </nav>
+
+      <button class="sidebar-add" id="addAppButton" type="button">
+        <span>+</span>
+        <span>Add app</span>
+      </button>
+
+      <div class="sidebar-footer">
+        <div class="sheet-status">
+          <span class="status-dot"></span>
+          <span id="connectionLabel">Not connected</span>
+        </div>
+        <button id="settingsButton" class="icon-button" type="button" aria-label="Settings">
+          <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5zm7.4-3.5c.04-.33.06-.66.06-1s-.02-.67-.06-1l2.1-1.64-2-3.46-2.47 1a8 8 0 0 0-1.73-1L14.9 2h-4l-.4 3.9a8 8 0 0 0-1.73 1l-2.47-1-2 3.46 2.1 1.64c-.04.33-.06.66-.06 1s.02.67.06 1l-2.1 1.64 2 3.46 2.47-1a8 8 0 0 0 1.73 1l.4 3.9h4l.4-3.9a8 8 0 0 0 1.73-1l2.47 1 2-3.46-2.1-1.64z" /></svg>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Workspace</p>
+          <h1>Apps</h1>
+        </div>
+        <button id="connectButton" class="primary-button" type="button">
+          <span>+</span> Add spreadsheet
+        </button>
+      </header>
+
+      <section class="source-bar">
+        <label>
+          Spreadsheet category
+          <select id="sourceSelect"><option>Loading saved categories...</option></select>
+        </label>
+        <button id="deleteSourceButton" class="secondary-button danger-button" type="button" disabled>
+          Delete spreadsheet
+        </button>
+        <label>
+          Sheet
+          <select id="sheetSelect" disabled><option>Select a spreadsheet</option></select>
+        </label>
+        <button id="refreshButton" class="secondary-button" type="button" disabled>
+          <svg viewBox="0 0 24 24"><path d="M12 5V2l5 4-5 4V7a5 5 0 1 0 4.58 7l1.8 1.8A7 7 0 1 1 12 5z" /></svg>
+          <span id="refreshButtonLabel">Refresh</span>
+        </button>
+      </section>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <span>Total apps</span>
+          <strong id="totalCount">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Visible rows</span>
+          <strong id="visibleCount">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Last updated</span>
+          <strong id="lastUpdated">—</strong>
+        </article>
+      </section>
+
+      <section class="table-card">
+        <div class="table-toolbar">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24"><path d="M10.5 18a7.5 7.5 0 1 1 5.3-12.8A7.5 7.5 0 0 1 10.5 18zm0-13a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zm5.5 10.6 5.7 5.7-1.4 1.4-5.7-5.7 1.4-1.4z" /></svg>
+            <input id="searchInput" type="search" placeholder="Search apps..." disabled />
+          </div>
+          <button id="tableAddButton" class="primary-button compact" type="button" disabled>
+            <span>+</span> Add row
+          </button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div id="emptyState" class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z" /></svg>
+            </div>
+            <h2>Connect your spreadsheet</h2>
+            <p>Choose a Google Spreadsheet and sheet to manage app records.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="settingsDialog">
+      <form id="settingsForm" method="dialog">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Configuration</p>
+            <h2>Google Sheets connection</h2>
+          </div>
+          <button class="close-button" value="cancel" aria-label="Close" type="submit">×</button>
+        </div>
+        <label>
+          OAuth 2.0 Web Client ID
+          <input id="clientIdInput" type="text" placeholder="123456789-example.apps.googleusercontent.com" required />
+        </label>
+        <p class="field-help">Create a Web client in Google Cloud, then add this page's URL to Authorized JavaScript origins.</p>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancel</button>
+          <button id="saveSettingsButton" class="primary-button" value="default" type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="rowDialog">
+      <form id="rowForm" method="dialog">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Spreadsheet row</p>
+            <h2 id="rowDialogTitle">Add app</h2>
+          </div>
+          <button class="close-button" value="cancel" aria-label="Close" type="submit">×</button>
+        </div>
+        <div id="rowFields"></div>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancel</button>
+          <button id="saveRowButton" class="primary-button" value="default" type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="detailsDrawer" class="side-drawer" aria-labelledby="detailsTitle">
+      <div class="drawer-panel">
+        <div class="profile-header">
+          <div id="detailsAvatar" class="profile-avatar" aria-hidden="true">?</div>
+          <div>
+            <p class="eyebrow">Employee record</p>
+            <h2 id="detailsTitle">Employee details</h2>
+            <p id="detailsSubtitle" class="drawer-subtitle"></p>
+          </div>
+          <button id="closeDetailsDrawerButton" class="drawer-close" type="button" aria-label="Close details">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="drawer-section-heading">
+          <h3>Personal details</h3>
+          <span>Additional employee information</span>
+        </div>
+        <dl id="detailsFields" class="details-fields"></dl>
+      </div>
+    </dialog>
+
+    <dialog id="spreadsheetDialog">
+      <form id="spreadsheetForm" method="dialog">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Private source</p>
+            <h2>Add spreadsheet</h2>
+          </div>
+          <button class="close-button" value="cancel" aria-label="Close" type="submit">×</button>
+        </div>
+        <label>
+          Category name
+          <input id="spreadsheetCategoryInput" type="text" placeholder="e.g. Manning" required />
+        </label>
+        <label>
+          Google Spreadsheet URL
+          <input id="spreadsheetUrlInput" type="url" autocomplete="off" placeholder="https://docs.google.com/spreadsheets/d/..." required />
+        </label>
+        <p class="field-help">Use a new category for each spreadsheet. Saving an existing category updates it. Only these URLs are loaded; Drive files aren't listed.</p>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancel</button>
+          <button id="saveSpreadsheetButton" class="primary-button" value="default" type="submit">Save &amp; connect</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="app.js?v=drawer-no-number-hidden-fields"></script>
+  </body>
+</html>
